@@ -39,19 +39,15 @@ class Test {
     // add earned points
     let value = this.questions[this.current].Click(index);
     this.score += value;
-    let correct = -1;
+    let correct = - 1;
 
     // if points were added, then the answer is correct
     if (value >= 1) correct = index;
     else {
       // looking for the right answer
-      let currentQuestionAnswer = this.questions[this.current].answers;
-      for (let i = 0; i < currentQuestionAnswer.length; i++) {
-        if (currentQuestionAnswer[i].value >= 1) {
-          correct = i;
-          break;
-        }
-      }
+      this.questions[this.current].answers.forEach((item, index) => {
+        correct = item.value >= 1 ? index : correct;
+      })
     }
     this.Next();
     return correct;
@@ -59,10 +55,40 @@ class Test {
 
   // next question
   Next() {
-    this.current++;
+    this.current ++;
   }
 }
 
+const setAttribute = {
+  setMyAttribute(item, items) {
+    if (items.id) item.id = items.id;
+    if (items.className) item.className = items.className;
+    if (items.html) item.innerHTML = items.html;
+    if (item instanceof HTMLInputElement) {
+      if (items.type) item.type = items.type;
+      if (items.name) item.name = items.name;
+      if (items.value) item.value = items.value;
+    }
+    return item
+  }
+};
+
+class CreatElement {
+  Creat(items) {
+    const item = document.createElement(items.element);
+    return this.setMyAttribute(item, items);
+  }
+}
+
+class CloneElement {
+  Creat(items) {
+    const item = items.element.cloneNode(true);
+    return this.setMyAttribute(item, items);
+  }
+}
+
+Object.assign(CreatElement.prototype, setAttribute);
+Object.assign(CloneElement.prototype, setAttribute);
 
 // block with a render of a question
 class DivQuestion {
@@ -73,56 +99,50 @@ class DivQuestion {
     this.container = document.getElementById(container);
   }
 
+  AppendChilds(element, items) {
+    for (let i = 0; i < items.length; i ++) {
+      element.appendChild(items[i])
+    }
+  }
+
   SetQuestion(endQuestion) {
     let txtBtn = endQuestion ? 'Finish' : 'Next';
-    let div = document.createElement('div');
-    div.id = `answer${this.numQuestion}`;
-
-    let p = document.createElement('p');
-    let newP;
-
-    let radio = document.createElement('input');
-    radio.type = 'radio';
-    radio.className = 'radio';
-    radio.name = `answer${this.numQuestion}`;
-    let newRadio;
-
-    let label = document.createElement('label');
-    let newLabel;
-
-    let inputSubmit = document.createElement('input');
-    inputSubmit.type = 'submit';
-    inputSubmit.value = txtBtn;
-    inputSubmit.className = 'button';
+    let div = new CreatElement().Creat({
+      element: 'div',
+      id: `answer${this.numQuestion}`
+    });
+    let p = new CreatElement().Creat({element: 'p'});
+    let radio = new CreatElement().Creat({
+      element: 'input',
+      className: 'radio',
+      type: 'radio',
+      name: `answer${this.numQuestion}`
+    });
+    let label = new CreatElement().Creat({element: 'label'});
+    let inputSubmit = new CreatElement().Creat({
+      element: 'input',
+      className: 'button',
+      type: 'submit',
+      value: txtBtn
+    });
     inputSubmit.setAttribute('index', this.numQuestion);
-    inputSubmit.addEventListener('click',
-      function (e) {
-        getAnswer(e, e.target.getAttribute('index'));
-      });
-
-    newP = p.cloneNode(true);
-    newP.innerHTML = `Вопрос ${this.numQuestion + 1} из ${test.questions.length}`;
-    div.appendChild(newP);
-
-    newP = p.cloneNode(true);
-    newP.innerHTML = this.testQuestion.questions[this.numQuestion].text;
-    div.appendChild(newP);
-
-    for (let i = 0; i < this.answers.length; i++) {
-      newRadio = radio.cloneNode(true);
-      newLabel = label.cloneNode(true);
-      newRadio.value = i;
-      newLabel.innerHTML = this.answers[i].text;
-
-      newP = p.cloneNode(true);
-      newP.appendChild(newRadio);
-      newP.appendChild(newLabel);
-
+    inputSubmit.addEventListener('click', function (e) {
+      getAnswer(e, e.target.getAttribute('index'));
+    });
+    this.AppendChilds(div, [
+      new CloneElement().Creat({element: p, html: `Вопрос ${this.numQuestion + 1} из ${test.questions.length}`}),
+      new CloneElement().Creat({element: p, html: this.testQuestion.questions[this.numQuestion].text})
+    ]);
+    let newP;
+    for (let i = 0; i < this.answers.length; i ++) {
+      newP = new CloneElement().Creat({element: p});
+      this.AppendChilds(newP,[
+        new CloneElement().Creat({element: radio, value: `${i}`}),
+        new CloneElement().Creat({element: label, html: this.answers[i].text})
+      ]);
       div.appendChild(newP);
     }
-
     div.appendChild(inputSubmit);
-
     this.container.appendChild(div);
   }
 }
